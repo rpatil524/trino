@@ -57,24 +57,16 @@ public class SparkExpressionBuilder
 
     private static ArithmeticBinaryExpression.Operator getArithmeticBinaryOperator(Token operator)
     {
-        switch (operator.getType()) {
-            case SparkExpressionBaseParser.PLUS:
-                return ArithmeticBinaryExpression.Operator.ADD;
-            case SparkExpressionBaseParser.MINUS:
-                return ArithmeticBinaryExpression.Operator.SUBTRACT;
-            case SparkExpressionBaseParser.ASTERISK:
-                return ArithmeticBinaryExpression.Operator.MULTIPLY;
-            case SparkExpressionBaseParser.SLASH:
-                return ArithmeticBinaryExpression.Operator.DIVIDE;
-            case SparkExpressionBaseParser.PERCENT:
-                return ArithmeticBinaryExpression.Operator.MODULUS;
-            case SparkExpressionBaseParser.AMPERSAND:
-                return ArithmeticBinaryExpression.Operator.BITWISE_AND;
-            case SparkExpressionBaseParser.CIRCUMFLEX:
-                return ArithmeticBinaryExpression.Operator.BITWISE_XOR;
-        }
-
-        throw new UnsupportedOperationException("Unsupported operator: " + operator.getText());
+        return switch (operator.getType()) {
+            case SparkExpressionBaseParser.PLUS -> ArithmeticBinaryExpression.Operator.ADD;
+            case SparkExpressionBaseParser.MINUS -> ArithmeticBinaryExpression.Operator.SUBTRACT;
+            case SparkExpressionBaseParser.ASTERISK -> ArithmeticBinaryExpression.Operator.MULTIPLY;
+            case SparkExpressionBaseParser.SLASH -> ArithmeticBinaryExpression.Operator.DIVIDE;
+            case SparkExpressionBaseParser.PERCENT -> ArithmeticBinaryExpression.Operator.MODULUS;
+            case SparkExpressionBaseParser.AMPERSAND -> ArithmeticBinaryExpression.Operator.BITWISE_AND;
+            case SparkExpressionBaseParser.CIRCUMFLEX -> ArithmeticBinaryExpression.Operator.BITWISE_XOR;
+            default -> throw new UnsupportedOperationException("Unsupported operator: " + operator.getText());
+        };
     }
 
     @Override
@@ -107,6 +99,20 @@ public class SparkExpressionBuilder
     }
 
     @Override
+    public SparkExpression visitBetween(SparkExpressionBaseParser.BetweenContext context)
+    {
+        BetweenPredicate.Operator operator = BetweenPredicate.Operator.BETWEEN;
+        if (context.NOT() != null) {
+            operator = BetweenPredicate.Operator.NOT_BETWEEN;
+        }
+        return new BetweenPredicate(
+                operator,
+                visit(context.value, SparkExpression.class),
+                visit(context.lower, SparkExpression.class),
+                visit(context.upper, SparkExpression.class));
+    }
+
+    @Override
     public Object visitColumnReference(SparkExpressionBaseParser.ColumnReferenceContext context)
     {
         return visit(context.identifier());
@@ -115,20 +121,13 @@ public class SparkExpressionBuilder
     private static ComparisonExpression.Operator getComparisonOperator(Token symbol)
     {
         return switch (symbol.getType()) {
-            case SparkExpressionBaseLexer.EQ:
-                yield ComparisonExpression.Operator.EQUAL;
-            case SparkExpressionBaseLexer.NEQ:
-                yield ComparisonExpression.Operator.NOT_EQUAL;
-            case SparkExpressionBaseLexer.LT:
-                yield ComparisonExpression.Operator.LESS_THAN;
-            case SparkExpressionBaseLexer.LTE:
-                yield ComparisonExpression.Operator.LESS_THAN_OR_EQUAL;
-            case SparkExpressionBaseLexer.GT:
-                yield ComparisonExpression.Operator.GREATER_THAN;
-            case SparkExpressionBaseLexer.GTE:
-                yield ComparisonExpression.Operator.GREATER_THAN_OR_EQUAL;
-            default:
-                throw new IllegalArgumentException("Unsupported operator: " + symbol.getText());
+            case SparkExpressionBaseLexer.EQ -> ComparisonExpression.Operator.EQUAL;
+            case SparkExpressionBaseLexer.NEQ -> ComparisonExpression.Operator.NOT_EQUAL;
+            case SparkExpressionBaseLexer.LT -> ComparisonExpression.Operator.LESS_THAN;
+            case SparkExpressionBaseLexer.LTE -> ComparisonExpression.Operator.LESS_THAN_OR_EQUAL;
+            case SparkExpressionBaseLexer.GT -> ComparisonExpression.Operator.GREATER_THAN;
+            case SparkExpressionBaseLexer.GTE -> ComparisonExpression.Operator.GREATER_THAN_OR_EQUAL;
+            default -> throw new IllegalArgumentException("Unsupported operator: " + symbol.getText());
         };
     }
 
@@ -148,6 +147,12 @@ public class SparkExpressionBuilder
     public Object visitUnicodeStringLiteral(SparkExpressionBaseParser.UnicodeStringLiteralContext context)
     {
         return new StringLiteral(decodeUnicodeLiteral(context));
+    }
+
+    @Override
+    public SparkExpression visitNullLiteral(SparkExpressionBaseParser.NullLiteralContext context)
+    {
+        return new NullLiteral();
     }
 
     private static String decodeUnicodeLiteral(SparkExpressionBaseParser.UnicodeStringLiteralContext context)

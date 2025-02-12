@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,11 +35,10 @@ public class TestDirectExchangeClientConfig
         assertRecordedDefaults(recordDefaults(DirectExchangeClientConfig.class)
                 .setMaxBufferSize(DataSize.of(32, Unit.MEGABYTE))
                 .setConcurrentRequestMultiplier(3)
-                .setMinErrorDuration(new Duration(5, TimeUnit.MINUTES))
-                .setMaxErrorDuration(new Duration(5, TimeUnit.MINUTES))
+                .setMaxErrorDuration(new Duration(1, TimeUnit.MINUTES))
                 .setMaxResponseSize(new HttpClientConfig().getMaxContentLength())
-                .setPageBufferClientMaxCallbackThreads(25)
-                .setClientThreads(25)
+                .setPageBufferClientMaxCallbackThreads("25")
+                .setClientThreads("25")
                 .setAcknowledgePages(true)
                 .setDeduplicationBufferSize(DataSize.of(32, Unit.MEGABYTE)));
     }
@@ -50,7 +49,6 @@ public class TestDirectExchangeClientConfig
         Map<String, String> properties = ImmutableMap.<String, String>builder()
                 .put("exchange.max-buffer-size", "1GB")
                 .put("exchange.concurrent-request-multiplier", "13")
-                .put("exchange.min-error-duration", "13s")
                 .put("exchange.max-error-duration", "33s")
                 .put("exchange.max-response-size", "1MB")
                 .put("exchange.client-threads", "2")
@@ -62,11 +60,10 @@ public class TestDirectExchangeClientConfig
         DirectExchangeClientConfig expected = new DirectExchangeClientConfig()
                 .setMaxBufferSize(DataSize.of(1, Unit.GIGABYTE))
                 .setConcurrentRequestMultiplier(13)
-                .setMinErrorDuration(new Duration(33, TimeUnit.SECONDS))
                 .setMaxErrorDuration(new Duration(33, TimeUnit.SECONDS))
                 .setMaxResponseSize(DataSize.of(1, Unit.MEGABYTE))
-                .setClientThreads(2)
-                .setPageBufferClientMaxCallbackThreads(16)
+                .setClientThreads("2")
+                .setPageBufferClientMaxCallbackThreads("16")
                 .setAcknowledgePages(false)
                 .setDeduplicationBufferSize(DataSize.of(2, Unit.MEGABYTE));
 

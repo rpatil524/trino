@@ -14,6 +14,7 @@
 package io.trino.sql.rewrite;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import io.trino.Session;
 import io.trino.cost.CachingStatsProvider;
 import io.trino.cost.CachingTableStatsProvider;
@@ -59,8 +60,6 @@ import io.trino.sql.tree.StringLiteral;
 import io.trino.sql.tree.Table;
 import io.trino.sql.tree.TableSubquery;
 import io.trino.sql.tree.Values;
-
-import javax.inject.Inject;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -140,7 +139,7 @@ public class ShowStatsRewrite
             this.metadata = requireNonNull(metadata, "metadata is null");
             this.queryExplainer = requireNonNull(queryExplainer, "queryExplainer is null");
             this.warningCollector = requireNonNull(warningCollector, "warningCollector is null");
-            this.planOptimizersStatsCollector = requireNonNull(planOptimizersStatsCollector, "queryStatsCollector is null");
+            this.planOptimizersStatsCollector = requireNonNull(planOptimizersStatsCollector, "planOptimizersStatsCollector is null");
             this.statsCalculator = requireNonNull(statsCalculator, "statsCalculator is null");
         }
 
@@ -149,7 +148,7 @@ public class ShowStatsRewrite
         {
             Query query = getRelation(node);
             Plan plan = queryExplainer.getLogicalPlan(session, query, parameters, warningCollector, planOptimizersStatsCollector);
-            CachingStatsProvider cachingStatsProvider = new CachingStatsProvider(statsCalculator, session, plan.getTypes(), new CachingTableStatsProvider(metadata, session));
+            CachingStatsProvider cachingStatsProvider = new CachingStatsProvider(statsCalculator, session, new CachingTableStatsProvider(metadata, session));
             PlanNodeStatsEstimate stats = cachingStatsProvider.getStats(plan.getRoot());
             return rewriteShowStats(plan, stats);
         }
@@ -175,7 +174,7 @@ public class ShowStatsRewrite
             for (int columnIndex = 0; columnIndex < root.getOutputSymbols().size(); columnIndex++) {
                 Symbol outputSymbol = root.getOutputSymbols().get(columnIndex);
                 String columnName = root.getColumnNames().get(columnIndex);
-                Type columnType = plan.getTypes().get(outputSymbol);
+                Type columnType = outputSymbol.type();
                 SymbolStatsEstimate symbolStatistics = planNodeStatsEstimate.getSymbolStatistics(outputSymbol);
                 ImmutableList.Builder<Expression> rowValues = ImmutableList.builder();
                 rowValues.add(new StringLiteral(columnName));

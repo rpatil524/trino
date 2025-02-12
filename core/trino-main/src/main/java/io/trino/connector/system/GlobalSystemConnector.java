@@ -14,7 +14,9 @@
 package io.trino.connector.system;
 
 import com.google.common.collect.ImmutableSet;
-import io.trino.operator.table.Sequence.SequenceFunctionHandle;
+import com.google.inject.Inject;
+import io.trino.operator.table.SequenceFunction.SequenceFunctionHandle;
+import io.trino.spi.catalog.CatalogName;
 import io.trino.spi.connector.CatalogHandle;
 import io.trino.spi.connector.CatalogHandle.CatalogVersion;
 import io.trino.spi.connector.ConnectorMetadata;
@@ -23,19 +25,16 @@ import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorSplitSource;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.connector.SystemTable;
-import io.trino.spi.function.SchemaFunctionName;
+import io.trino.spi.function.table.ConnectorTableFunction;
+import io.trino.spi.function.table.ConnectorTableFunctionHandle;
 import io.trino.spi.procedure.Procedure;
-import io.trino.spi.ptf.ConnectorTableFunction;
-import io.trino.spi.ptf.ConnectorTableFunctionHandle;
 import io.trino.spi.transaction.IsolationLevel;
 import io.trino.transaction.InternalConnector;
 import io.trino.transaction.TransactionId;
 
-import javax.inject.Inject;
-
 import java.util.Set;
 
-import static io.trino.operator.table.Sequence.getSequenceFunctionSplitSource;
+import static io.trino.operator.table.SequenceFunction.getSequenceFunctionSplitSource;
 import static io.trino.spi.connector.CatalogHandle.createRootCatalogHandle;
 import static java.util.Objects.requireNonNull;
 
@@ -43,7 +42,7 @@ public class GlobalSystemConnector
         implements InternalConnector
 {
     public static final String NAME = "system";
-    public static final CatalogHandle CATALOG_HANDLE = createRootCatalogHandle(NAME, new CatalogVersion("system"));
+    public static final CatalogHandle CATALOG_HANDLE = createRootCatalogHandle(new CatalogName(NAME), new CatalogVersion("system"));
 
     private final Set<SystemTable> systemTables;
     private final Set<Procedure> procedures;
@@ -93,7 +92,7 @@ public class GlobalSystemConnector
         return new ConnectorSplitManager()
         {
             @Override
-            public ConnectorSplitSource getSplits(ConnectorTransactionHandle transaction, ConnectorSession session, SchemaFunctionName name, ConnectorTableFunctionHandle functionHandle)
+            public ConnectorSplitSource getSplits(ConnectorTransactionHandle transaction, ConnectorSession session, ConnectorTableFunctionHandle functionHandle)
             {
                 if (functionHandle instanceof SequenceFunctionHandle sequenceFunctionHandle) {
                     return getSequenceFunctionSplitSource(sequenceFunctionHandle);
